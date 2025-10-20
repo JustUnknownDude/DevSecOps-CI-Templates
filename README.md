@@ -11,8 +11,9 @@ This repository provides reusable CI/CD templates that can be easily included in
 | **Secrets Detection**        | Trufflehog | Searches for exposed secrets, credentials, and private keys in the repository.                     |
 | **Vulnerability Management** | DefectDojo | Automatically uploads scan results for centralized tracking and triage.                            |
 \
+
 ###To include and use these templates in your project, simply add the following to your .gitlab-ci.yml:\
-\
+
 ```
 include:
   - project: 'devsecops/devsecops-template'
@@ -43,7 +44,7 @@ See the usage example in .gitlab-ci.yml\
 | `.gitlab-ci-dast-zap.yml`          | Dynamic testing (DAST) using OWASP ZAP             |
 | `.gitlab-ci-trufflehog.yml`        | Secret detection using Trufflehog                  |
 | `.gitlab-ci.yml`                   | Template, example of use                           |
-
+\
 #####Requirements
 
 GitLab Runner with Docker-in-Docker support
@@ -107,7 +108,7 @@ upload_semgrep_to_defectdojo:
 Пример подключения смотри в файле .gitlab-ci.yml
 
 ###Список шаблонов:
-
+\
 | Файл                               | Назначение                                |
 | ---------------------------------- | ----------------------------------------- |
 | `.gitlab-ci-sast-semgrep.yml`      | SAST-анализ исходного кода (Semgrep)      |
@@ -115,7 +116,7 @@ upload_semgrep_to_defectdojo:
 | `.gitlab-ci-dast-zap.yml`          | Динамическое сканирование (OWASP ZAP)     |
 | `.gitlab-ci-trufflehog.yml`        | Поиск секретов (Trufflehog)               |
 | `.gitlab-ci.yml`                   | Шаблон, пример использования              |
-
+\
 
 ####Требования
 
