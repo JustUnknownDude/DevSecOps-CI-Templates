@@ -1,0 +1,87 @@
+include:
+# Path to repo
+  - project: 'devsecops-templates/devsecops-template'
+    ref: master
+    file: '.gitlab-ci-trufflehog.yml'
+  - project: 'devsecops-templates/devsecops-template'
+    ref: master
+    file: '.gitlab-ci-bsca.yml'
+  - project: 'devsecops-templates/devsecops-template'
+    ref: master
+    file: '.gitlab-ci-dast.yml'
+  - project: 'devsecops-templates/devsecops-template'
+    ref: master
+    file: '.gitlab-ci-semgrep-sast.yml'
+
+workflow:
+  name: "Scan for $APP_URL $DOCKER_IMAGE"
+  
+variables:
+  APP_URL:
+    description: "Site url, for example https://sub1.example.com"
+    value: ""
+  DOCKER_IMAGE:
+    description: "The name of the Docker image, for example ghcr.io/linuxcontainers/alpine:latest"
+    value: ""
+
+
+stages:
+  - bsca_scan
+  - upload_bsca
+  - dast_scan
+  - upload_dast
+  - trufflehog_scan
+  - upload_trufflehog
+  - sast_semgrep_scan
+  - upload_semgrep
+
+
+# We connect ready-made templates as specific jobs
+## bSCA
+bsca_scan:
+  stage: bsca_scan
+  extends: .bsca_scan_template
+  rules:
+    - if: '$DOCKER_IMAGE != ""'
+
+upload_bsca_to_defectdojo:
+  stage: upload_bsca
+  extends: .upload_bsca_to_defectdojo_template
+  needs: [bsca_scan]
+  rules:
+    - if: '$DOCKER_IMAGE != ""'
+
+#DAST
+dast_scan:
+  stage: dast_scan
+  extends: .dast_scan_template
+  rules:
+    - if: '$APP_URL != ""'
+
+upload_dast_to_defectdojo:
+  stage: upload_dast
+  extends: .upload_dast_to_defectdojo_template
+  needs: [dast_scan]
+  rules:
+    - if: '$APP_URL != ""'
+
+#Secret detection
+trufflehog_scan:
+  stage: trufflehog_scan
+  extends: .trufflehog_secret_detection
+
+upload_trufflehog_to_defectdojo:
+  stage: upload_trufflehog
+  extends: .upload_trufflehog_to_defectdojo_template
+  needs: [trufflehog_scan]
+
+#SAST Semgrep
+sast_semgrep_scan:
+  stage: sast_semgrep_scan
+  extends: .sast_semgrep_scan_template
+
+upload_semgrep_to_defectdojo:
+  stage: upload_semgrep
+  extends: .upload_semgrep_to_defectdojo_template
+  needs: [sast_semgrep_scan]
+
