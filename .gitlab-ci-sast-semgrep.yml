@@ -1,0 +1,47 @@
+stages:
+  - sast_semgrep_scan
+  - upload_semgrep
+
+# SAST Semgrep
+.sast_semgrep_scan_template:
+  stage: sast_semgrep_scan
+  image: 
+      name: python:3.11-slim
+      pull_policy: if-not-present
+  tags:
+    - docker
+  before_script:
+    - apt-get update && apt-get install -y git 
+    - pip install semgrep
+  script:
+    - semgrep scan --config auto --output semgrep-report.json --json
+  artifacts:
+    paths:
+      - semgrep-report.json
+    expire_in: 1 week
+
+.upload_semgrep_to_defectdojo_template:
+  stage: upload_semgrep
+  image: 
+    name: curlimages/curl:latest
+    pull_policy: if-not-present
+  variables:
+    DOCKER_NETWORK_MODE: "host"
+  needs: [sast_semgrep_scan]
+  tags:
+    - docker
+  script:
+    - |
+      curl -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
+        -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
+        -F 'scan_type=Semgrep JSON Report' \
+        -F "file=@semgrep-report.json" \
+        -F "product_name=$CI_PROJECT_PATH_SLUG" \
+        -F "engagement_name=CI Pipeline" \
+        -F 'auto_create_context=true' \
+        -F "product_type_name=Repository" \
+        -F 'active=true' \
+        -F 'verified=true'
+  dependencies:
+    - sast_semgrep_scan
+
