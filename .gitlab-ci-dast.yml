@@ -1,0 +1,60 @@
+---
+  
+variables:
+  APP_URL: ""
+
+stages:
+  - dast_scan
+  - upload
+
+.dast_scan_template:
+  stage: dast_scan
+  image: 
+    name: docker:latest
+    pull_policy: if-not-present
+  services:
+  - name: docker:dind
+    alias: docker
+  variables:
+    DOCKER_HOST: "tcp://docker:2375"
+    DOCKER_TLS_CERTDIR: ""
+  tags:
+    - docker
+  script:
+    - mkdir -p zap-report
+    - chmod -R 777 zap-report
+    - cd zap-report
+    - echo "Запуск OWASP ZAP"
+    - docker run --rm -v $(pwd):/zap/wrk -t zaproxy/zap-stable zap-baseline.py -t "$APP_URL" -x zap-report.xml -I
+  artifacts:
+    paths:
+      - zap-report/zap-report.xml
+    expire_in: 1 week
+  rules:
+    - if: '$APP_URL != ""'
+
+.upload_dast_to_defectdojo_template:
+  stage: upload
+  image: 
+    name: curlimages/curl:latest
+    pull_policy: if-not-present
+  variables:
+    DOCKER_NETWORK_MODE: "host"
+  needs: [dast_scan]
+  tags:
+    - docker
+  script:
+    - curl -I ${DEFECTDOJO_URL}
+    - |
+      curl -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
+        -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
+        -F 'scan_type=ZAP Scan' \
+        -F 'file=@zap-report/zap-report.xml' \
+        -F "product_name=$APP_URL" \
+        -F "engagement_name=CI Pipeline" \
+        -F 'auto_create_context=true' \
+        -F "product_type_name=Web Applications" \
+        -F 'active=true' \
+        -F 'verified=true'
+  dependencies:
+    - dast_scan
